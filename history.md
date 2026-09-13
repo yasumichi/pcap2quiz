@@ -80,5 +80,24 @@ Ollama のバージョンアップや長文応答生成時に発生していた�
 3. **仕様書の更新 (`AGENTS.md`)**
    - 上記の出題範囲および禁止事項を `AGENTS.md` の Quiz Engine 仕様に同期反映。
 
+## [2026-09-13] - v1.1.0
+### 変更・改善概要
+対応プロトコルの増加に伴うコードの肥大化・複雑化（破綻）を防ぐため、プロトコル解析ロジックを Strategy パターン（プラグイン構造）へリファクタリング。
+
+### 追加・変更点
+1. **プロトコル解析モジュール (`parsers/`) の新設**
+   - `parsers/base.py`: プロトコル抽出器の抽象基底クラス `BaseExtractor` および統合管理クラス `ProtocolManager` を定義。
+   - プロトコル別アナライザーへの切り出し:
+     - `parsers/flow.py`: IPペア通信量・パケット概要サンプル (`FlowExtractor`)
+     - `parsers/dns.py`: DNSクエリ抽出 (`DNSExtractor`)
+     - `parsers/http.py`: HTTPリクエスト抽出 (`HTTPExtractor`)
+     - `parsers/tls.py`: TLS SNI抽出 (`TLSExtractor`)
+     - `parsers/smb.py`: SMBコマンド抽出 (`SMBExtractor`)
+   - `parsers/__init__.py`: デフォルト抽出器を一括登録する `get_default_manager()` を実装。
+2. **`pcap2quiz.py` の構造化・保守性向上**
+   - `extract_pcap_summary` 内の長大な `if-elif` 条件分岐を全廃し、`ProtocolManager` 経由の処理委譲へリファクタリング。
+   - 新しいプロトコルを追加する際、メイン処理を改修せず新クラスを追加・登録するのみで対応可能に（開閉原則の実現）。
+
+
 
 

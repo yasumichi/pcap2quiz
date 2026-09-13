@@ -6,6 +6,9 @@ from collections import Counter
 import pyshark
 import ollama
 
+from parsers import get_default_manager
+
+
 # --- Python 3.12+ / 3.14 互換性問題への修正パッチ ---
 if not hasattr(asyncio, "set_child_watcher"):
     asyncio.set_child_watcher = lambda watcher: None
@@ -63,13 +66,7 @@ def extract_pcap_summary(pcap_path, max_packets=500):
     print(f"[*] PCAPファイルを解析中: {pcap_path} (最大 {max_packets} パケット)")
 
     cap = pyshark.FileCapture(pcap_path, keep_packets=False, eventloop=loop)
-
-    ip_pairs = Counter()
-    dns_queries = Counter()
-    http_requests = []
-    tls_snis = Counter()
-    smb_commands = Counter()
-    general_summary = []
+    manager = get_default_manager()
 
     packet_count = 0
 
@@ -79,46 +76,7 @@ def extract_pcap_summary(pcap_path, max_packets=500):
             break
 
         try:
-            highest_layer = pkt.highest_layer
-            src_ip = getattr(pkt.ip, 'src', 'N/A') if hasattr(pkt, 'ip') else 'N/A'
-            dst_ip = getattr(pkt.ip, 'dst', 'N/A') if hasattr(pkt, 'ip') else 'N/A'
-            
-            if src_ip != 'N/A' and dst_ip != 'N/A':
-                ip_pairs[f"{src_ip} -> {dst_ip}"] += 1
-
-            # 1. DNS
-            if hasattr(pkt, 'dns'):
-                if hasattr(pkt.dns, 'qry_name'):
-                    dns_queries[pkt.dns.qry_name] += 1
-
-            # 2. HTTP
-            elif hasattr(pkt, 'http'):
-                method = getattr(pkt.http, 'request_method', '')
-                uri = getattr(pkt.http, 'request_full_uri', getattr(pkt.http, 'request_uri', ''))
-                host = getattr(pkt.http, 'host', '')
-                ua = getattr(pkt.http, 'user_agent', '')
-                if uri or host:
-                    http_requests.append(f"{method} {host}{uri} (UA: {ua})".strip())
-
-            # 3. TLS/SSL
-            elif hasattr(pkt, 'tls') or hasattr(pkt, 'ssl'):
-                tls_layer = pkt.tls if hasattr(pkt, 'tls') else pkt.ssl
-                sni = getattr(tls_layer, 'handshake_extensions_server_name', '')
-                if sni:
-                    tls_snis[sni] += 1
-
-            # 4. SMB
-            elif hasattr(pkt, 'smb') or hasattr(pkt, 'smb2'):
-                smb_cmd = getattr(pkt.smb2, 'cmd', getattr(pkt, 'smb', {}).get('cmd', 'Command'))
-                smb_commands[smb_cmd] += 1
-
-            # パケットサンプル概要
-            if len(general_summary) < 50:
-                src_port = getattr(pkt[pkt.transport_layer], 'srcport', '') if hasattr(pkt, 'transport_layer') else ''
-                dst_port = getattr(pkt[pkt.transport_layer], 'dstport', '') if hasattr(pkt, 'transport_layer') else ''
-                port_info = f":{src_port} -> :{dst_port}" if src_port and dst_port else ""
-                general_summary.append(f"#{packet_count} {highest_layer} | {src_ip}{port_info} -> {dst_ip}")
-
+            manager.process_packet(pkt)
         except Exception:
             continue
 
@@ -128,34 +86,8 @@ def extract_pcap_summary(pcap_path, max_packets=500):
         print("[!] 解析可能なパケットデータが存在しませんでした。")
         sys.exit(1)
 
-    summary_text = f"--- 解析概要 (総処理パケット数: {packet_count}) ---\n"
-    
-    summary_text += "\n[Top IP Traffic Pairs]\n"
-    for pair, count in ip_pairs.most_common(10):
-        summary_text += f"- {pair}: {count} packets\n"
-
-    if dns_queries:
-        summary_text += "\n[DNS Queries]\n"
-        for qname, count in dns_queries.most_common(15):
-            summary_text += f"- {qname}: {count} times\n"
-
-    if http_requests:
-        summary_text += "\n[HTTP Requests (Sample)]\n"
-        for req in http_requests[:15]:
-            summary_text += f"- {req}\n"
-
-    if tls_snis:
-        summary_text += "\n[TLS Server Name Indication (SNI)]\n"
-        for sni, count in tls_snis.most_common(10):
-            summary_text += f"- {sni}: {count} times\n"
-
-    if smb_commands:
-        summary_text += "\n[SMB Commands]\n"
-        for cmd, count in smb_commands.most_common(10):
-            summary_text += f"- {cmd}: {count} times\n"
-
-    summary_text += "\n[Packet Flow Sample]\n"
-    summary_text += "\n".join(general_summary[:30])
+    summary_text = f"--- 解析概要 (総処理パケット数: {packet_count}) ---\n\n"
+    summary_text += manager.generate_full_summary()
 
     return summary_text
 
