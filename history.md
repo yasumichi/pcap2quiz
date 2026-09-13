@@ -110,6 +110,21 @@ Ollama のバージョンアップや長文応答生成時に発生していた�
 3. **仕様書・ドキュメントの同期更新 (`AGENTS.md`)**
    - `AGENTS.md` の標準対応プロトコル一覧に `FTPExtractor` の情報を追加。
 
+## [2026-09-13] - v1.3.0
+### 変更・改善概要
+新規プロトコル対応として SMTP、POP3、IMAP の電子メール関連プロトコル解析モジュールを追加し、メール送受信トラフィックの集計・要約抽出に対応。
+
+### 追加・変更点
+1. **電子メール関連プロトコルアナライザーの追加 (`parsers/`)**
+   - `parsers/smtp.py`: `SMTPExtractor` クラスを実装し、SMTP コマンド（`HELO`, `MAIL FROM`, `RCPT TO` 等）、レスポンス、送信元/送信先メールアドレスを抽出・集計。
+   - `parsers/pop3.py`: `POP3Extractor` クラスを実装し、POP3 コマンド（`USER`, `PASS`, `RETR` 等）、レスポンス（`+OK`, `-ERR`）、ログイン試行ユーザー名を抽出・集計。
+   - `parsers/imap.py`: `IMAPExtractor` クラスを実装し、IMAP コマンド（`LOGIN`, `SELECT`, `FETCH` 等）、レスポンス、ログイン試行ユーザー名を抽出・集計。
+2. **`ProtocolManager` への登録 (`parsers/__init__.py`)**
+   - デフォルトマネージャーに `SMTPExtractor`, `POP3Extractor`, `IMAPExtractor` をインポート・登録し、PCAP解析時に自動でメール通信要約を出力・プロンプトに反映できるよう拡張。
+3. **仕様書・ドキュメントの同期更新 (`AGENTS.md`)**
+   - `AGENTS.md` の標準対応プロトコル一覧に `SMTPExtractor`, `POP3Extractor`, `IMAPExtractor` の情報を追加。
+
+
 
 
 
