@@ -183,7 +183,7 @@ def generate_quiz_with_ollama(summary_text, num_questions=10, model_name="gemma:
 【作成要件】
 - 問題文、選択肢、および解説はすべて「日本語」で記述してください。
 - 4つの選択肢 (A, B, C, D) のうち、正解 (answer) は 'A', 'B', 'C', 'D' のいずれか1つの文字のみを指定してください。
-- 解説 (explanation) には、ログのどの部分（具体数値やプロトコル仕様）に基づいて正解・不正解が導かれるかを根拠とともに詳しく記載してください。
+- 解説 (explanation) は根拠を添えて簡潔（2〜3文程度）に記載してください。
 
 【PCAP解析サマリ】
 {summary_text}
@@ -193,7 +193,11 @@ def generate_quiz_with_ollama(summary_text, num_questions=10, model_name="gemma:
         model=model_name,
         messages=[{"role": "user", "content": prompt}],
         format=QUIZ_JSON_SCHEMA,
-        options={"temperature": 0.3}
+        options={
+            "temperature": 0.3,
+            "num_predict": 8192,
+            "num_ctx": 8192,
+        }
     )
 
     content = response['message']['content']
