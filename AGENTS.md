@@ -14,9 +14,9 @@
 
 ## 3. システムアーキテクチャ・処理フロー
 
-1. **PCAP Analysis (PyShark):**
-   - PCAPファイルを読み込み、基本統計（IPペア、通信ポート、DNSクエリ一覧、HTTP/TLS/SMBセッション概要）を抽出。
-   - トラフィックの「要約プロンプトテキスト」を生成。
+1. **PCAP Analysis (PyShark & Protocol Parsers):**
+   - PCAPファイルを読み込み、`ProtocolManager` 経由で各プロトコルアナライザー（`parsers/`）を実行し基本統計（IPペア、DNS/HTTP/TLS/SMB等）を抽出。
+   - 各プロトコルサマリを合成した「要約プロンプトテキスト」を生成。
 2. **Quiz Generation (Ollama API):**
    - `ollama.chat` または `ollama.generate` を使用し、JSON Schema 形式でクイズデータ構造を指定して送信。
    - 出力モデル例: `gemma2`, `gemma:4` 等。
@@ -52,14 +52,19 @@ LLMへ要求する出力データフォーマットは以下の構造としま�
 
 ## 5. 主要コンポーネント仕様
 
-### 5.1. PCAP Analyzer (`extract_pcap_summary`)
-- パケット上限数 (`--max-packets`, デフォルト 500)
-- 抽出対象情報:
-  - Top Talkers (通信量の多いIPアドレスペア)
-  - DNS Query 名・レスポンス一覧
-  - HTTP リクエスト (Method, URI, User-Agent, Host)
-  - TLS SNI (Server Name Indication)
-  - 特徴的なTCP/UDP通信
+### 5.1. PCAP Analyzer & Protocol Parsers (`parsers/`)
+- **アーキテクチャ:** Strategy パターン（プラグイン構造）を採用し、プロトコル解析ロジックをモジュール分離。
+  - `BaseExtractor`: 各プロトコル抽出器が実装する抽象基底クラス (`name`, `can_extract`, `process_packet`, `format_summary`)。
+  - `ProtocolManager`: 登録された各プロトコル抽出器を一括呼び出しし、集計サマリテキストを合成・生成。
+- **標準対応プロトコル・抽出機能 (`parsers/`):**
+  - `FlowExtractor`: Top Talkers (通信量の多いIPペア) およびパケットフローサンプル
+  - `DNSExtractor`: DNS Query 名一覧
+  - `HTTPExtractor`: HTTP リクエスト (Method, URI, Host, User-Agent)
+  - `TLSExtractor`: TLS SNI (Server Name Indication)
+  - `SMBExtractor`: SMB / SMB2 コマンド集計
+- **拡張性 (開閉原則):**
+  - 新規プロトコル追加時は `BaseExtractor` を継承した独自クラスを `parsers/` 以下に作成し、`ProtocolManager` へ登録するだけでメイン処理の改修不要。
+
 
 ### 5.2. Quiz Engine (`generate_quiz`)
 - Ollama API 呼び出し
