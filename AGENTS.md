@@ -62,6 +62,7 @@ LLMへ要求する出力データフォーマットは以下の構造としま�
   - `HTTPExtractor`: HTTP リクエスト (Method, URI, Host, User-Agent)
   - `TLSExtractor`: TLS SNI (Server Name Indication)
   - `SMBExtractor`: SMB / SMB2 コマンド集計
+  - `FTPExtractor`: FTP コマンド、応答コード、ログイン試行ユーザー名等
 - **拡張性 (開閉原則):**
   - 新規プロトコル追加時は `BaseExtractor` を継承した独自クラスを `parsers/` 以下に作成し、`ProtocolManager` へ登録するだけでメイン処理の改修不要。
 

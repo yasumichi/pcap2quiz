@@ -4,6 +4,7 @@ from parsers.dns import DNSExtractor
 from parsers.http import HTTPExtractor
 from parsers.tls import TLSExtractor
 from parsers.smb import SMBExtractor
+from parsers.ftp import FTPExtractor
 
 
 def get_default_manager() -> ProtocolManager:
@@ -17,6 +18,7 @@ def get_default_manager() -> ProtocolManager:
     manager.register(HTTPExtractor())
     manager.register(TLSExtractor())
     manager.register(SMBExtractor())
+    manager.register(FTPExtractor())
     return manager
 
 
@@ -28,5 +30,7 @@ __all__ = [
     "HTTPExtractor",
     "TLSExtractor",
     "SMBExtractor",
+    "FTPExtractor",
     "get_default_manager",
 ]
+
