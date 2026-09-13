@@ -1,6 +1,7 @@
 import argparse
 import asyncio
 import json
+import os
 import sys
 from collections import Counter
 import pyshark
@@ -92,15 +93,20 @@ def extract_pcap_summary(pcap_path, max_packets=500):
     return summary_text
 
 
-def generate_quiz_with_ollama(summary_text, num_questions=10, model_name="gemma:4"):
+def generate_quiz_with_ollama(summary_text, pcap_filename, num_questions=10, model_name="gemma:4"):
     """
     Ollama経由でJSON Schemaに従ってクイズデータを構造化出力として取得
     """
     print(f"[*] Ollama ({model_name}) にてクイズデータ (JSON) を生成中...")
 
     prompt = f"""
-あなたはSOC（Security Operations Center）のシニアインシデントアナリストです。
-提示されたPCAPキャプチャ解析サマリを客観的に評価し、Tier 1 / Tier 2 アナリスト向けの実践的な選択式クイズを {num_questions} 問作成してください。
+あなたはSOC（Security Operations Center）のアナリストです。
+解析対象のPCAPファイル名: {pcap_filename}
+提示された解析サマリを客観的に評価し、Tier 1 / Tier 2 アナリスト向けの実践的な選択式クイズを {num_questions} 問作成してください。
+
+【出力仕様】
+- description フィールドには、以下のフォーマットで説明を記述してください:
+  "{pcap_filename} の解析サマリに含まれる事実のみに基づき、パケット解析能力とプロトコル理解を評価するための選択式クイズです。"
 
 【重要：客観的解析とハルシネーション防止の絶対遵守事項】
 1. **パケット内容から直接確認できる事実のみに基づく問題設定 (最重要):**
@@ -347,8 +353,9 @@ def main():
 
     args = parser.parse_args()
 
+    pcap_filename = os.path.basename(args.pcap)
     summary = extract_pcap_summary(args.pcap, max_packets=args.max_packets)
-    quiz_data = generate_quiz_with_ollama(summary, num_questions=args.num_questions, model_name=args.model)
+    quiz_data = generate_quiz_with_ollama(summary, pcap_filename=pcap_filename, num_questions=args.num_questions, model_name=args.model)
 
     if args.format == "html":
         output_content = render_html(quiz_data)
