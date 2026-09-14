@@ -146,3 +146,16 @@ Ollama のバージョンアップや長文応答生成時に発生していた�
    - `<script src="https://cdn.tailwindcss.com"></script>` から相対パス `<script src="assets/tailwindcss.js"></script>` へ変更。
 3. **アセット自動コピー処理の追加 (`pcap2quiz.py`)**
    - HTML形式での生成時、`pcap2quiz.py` が配置されている `assets/` 内のファイルを、出力指定されたHTMLファイルと同一ディレクトリの `assets/` へ自動的にコピーする処理を追加。
+
+## [2026-09-14] - v1.6.0
+### 変更・改善概要
+`pcap2quiz.py` 内にヒアドキュメント形式でハードコードされていた HTML テンプレートを外部ファイル (`templates/quiz_template.html`) へ切り出し、テンプレートベースのレンダリング処理へリファクタリング。
+
+### 追加・変更点
+1. **HTML テンプレートファイルの独立化 (`templates/quiz_template.html`)**
+   - Python コード内から HTML / JavaScript / Tailwind CSS の構造を分離し、独立した `quiz_template.html` ファイルとして新設。
+   - エディタの構文ハイライトや補完の恩恵を受けられるようにし、デザインやスクリプトの保守性・可読性を向上。
+2. **テンプレート読み込み・埋め込みロジックの改修 (`pcap2quiz.py`)**
+   - `render_html` 関数を改修し、`templates/quiz_template.html` をオープンして `{title}`, `{description}`, `{questions_json}` を動的に置換・埋め込んで完全な HTML を生成するよう変更。
+3. **仕様書・ドキュメントの同期更新 (`AGENTS.md`, `history.md`)**
+   - `AGENTS.md` の HTML Render 仕様に外部テンプレートファイルの参照に関する記述を追加し、`history.md` に本変更履歴を追記。

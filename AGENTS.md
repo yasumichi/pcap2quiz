@@ -82,6 +82,7 @@ LLMへ要求する出力データフォーマットは以下の構造としま�
 
 ### 5.3. Exporter (`render_html`, `render_aiken`)
 - **HTML Render:** 
+  - 外部テンプレートファイル (`templates/quiz_template.html`) を読み込み、クイズデータを埋め込んで出力。
   - インタラクティブ機能（選択肢のクリック判定、スコア集計、解説アコーディオン表示、再挑戦ボタン）。
   - シングルファイル（HTML内にCSS/JSを含む）で動作。
 - **Aiken Render:**

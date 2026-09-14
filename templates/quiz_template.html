@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="ja" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{title}</title>
+    <script src="assets/tailwindcss.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        soc: {
+                            bg: '#0f172a',
+                            card: '#1e293b',
+                            border: '#334155',
+                            accent: '#38bdf8',
+                            correct: '#22c55e',
+                            incorrect: '#ef4444'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #0f172a; color: #f8fafc; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-8">
+    <div class="max-w-4xl mx-auto space-y-6">
+        <!-- Header -->
+        <header class="bg-soc-card border border-soc-border rounded-xl p-6 shadow-xl">
+            <div class="flex items-center space-x-3 mb-2">
+                <span class="px-3 py-1 bg-sky-500/20 text-sky-400 text-xs font-semibold rounded-full border border-sky-500/30">SOC Training</span>
+                <span class="text-xs text-slate-400">PCAP Analysis Quiz</span>
+            </div>
+            <h1 class="text-2xl md:text-3xl font-bold text-slate-100">{title}</h1>
+            <p class="text-slate-400 text-sm mt-2">{description}</p>
+            <div id="score-banner" class="hidden mt-4 p-4 bg-slate-800/80 rounded-lg border border-slate-700 flex justify-between items-center">
+                <div>
+                    <span class="text-sm text-slate-400">最終スコア: </span>
+                    <span id="score-text" class="text-2xl font-bold text-sky-400">0 / 0</span>
+                </div>
+                <button onclick="resetQuiz()" class="px-4 py-2 bg-sky-600 hover:bg-sky-500 text-white text-sm font-medium rounded-lg transition">再挑戦</button>
+            </div>
+        </header>
+
+        <!-- Quiz Container -->
+        <div id="quiz-container" class="space-y-6"></div>
+    </div>
+
+    <script>
+        const quizData = {questions_json};
+        const userAnswers = {};
+
+        function renderQuestions() {
+            const container = document.getElementById('quiz-container');
+            container.innerHTML = '';
+
+            quizData.forEach((q, idx) => {
+                const qNum = idx + 1;
+                const card = document.createElement('div');
+                card.className = 'bg-soc-card border border-soc-border rounded-xl p-6 shadow-lg space-y-4';
+                card.id = `question-${q.id}`;
+
+                let optionsHtml = '';
+                for (const [key, val] of Object.entries(q.options)) {
+                    optionsHtml += `
+                        <button onclick="selectOption(${q.id}, '${key}')" 
+                                id="opt-${q.id}-${key}"
+                                class="option-btn w-full text-left p-4 rounded-lg border border-slate-700 bg-slate-800/50 hover:bg-slate-700/50 hover:border-slate-500 transition flex items-start space-x-3">
+                            <span class="font-bold text-sky-400 px-2.5 py-0.5 bg-sky-950/60 rounded border border-sky-800/50">${key}</span>
+                            <span class="text-slate-200">${val}</span>
+                        </button>
+                    `;
+                }
+
+                card.innerHTML = `
+                    <div class="flex justify-between items-start">
+                        <h3 class="text-lg font-semibold text-slate-100 flex items-start">
+                            <span class="text-sky-400 font-bold mr-2">Q${qNum}.</span>
+                            <span>${q.question}</span>
+                        </h3>
+                    </div>
+                    <div class="space-y-2 mt-4">
+                        ${optionsHtml}
+                    </div>
+                    <div id="exp-${q.id}" class="hidden mt-4 p-4 rounded-lg bg-slate-900/80 border border-slate-700 text-sm space-y-2">
+                        <div id="result-tag-${q.id}" class="font-bold"></div>
+                        <div class="text-slate-300"><span class="font-semibold text-slate-400">解説: </span>${q.explanation}</div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function selectOption(qId, selectedKey) {
+            const question = quizData.find(q => q.id === qId);
+            if (!question) return;
+
+            userAnswers[qId] = selectedKey;
+
+            // ボタンの状態を更新
+            ['A', 'B', 'C', 'D'].forEach(key => {
+                const btn = document.getElementById(`opt-${qId}-${key}`);
+                if (!btn) return;
+                btn.disabled = true;
+                btn.classList.remove('hover:bg-slate-700/50', 'hover:border-slate-500');
+
+                if (key === question.answer) {
+                    btn.classList.add('bg-emerald-950/60', 'border-emerald-500', 'text-emerald-300');
+                } else if (key === selectedKey && selectedKey !== question.answer) {
+                    btn.classList.add('bg-rose-950/60', 'border-rose-500', 'text-rose-300');
+                } else {
+                    btn.classList.add('opacity-50');
+                }
+            });
+
+            // 解説を表示
+            const expDiv = document.getElementById(`exp-${qId}`);
+            const tagDiv = document.getElementById(`result-tag-${qId}`);
+            expDiv.classList.remove('hidden');
+
+            if (selectedKey === question.answer) {
+                tagDiv.className = 'text-emerald-400 font-bold';
+                tagDiv.textContent = '✓ 正解';
+            } else {
+                tagDiv.className = 'text-rose-400 font-bold';
+                tagDiv.textContent = `✗ 不正解 (正解: ${question.answer})`;
+            }
+
+            checkScore();
+        }
+
+        function checkScore() {
+            if (Object.keys(userAnswers).length === quizData.length) {
+                let correctCount = 0;
+                quizData.forEach(q => {
+                    if (userAnswers[q.id] === q.answer) correctCount++;
+                });
+
+                const banner = document.getElementById('score-banner');
+                const scoreText = document.getElementById('score-text');
+                scoreText.textContent = `${correctCount} / ${quizData.length}`;
+                banner.classList.remove('hidden');
+                banner.scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+
+        function resetQuiz() {
+            for (let member in userAnswers) delete userAnswers[member];
+            document.getElementById('score-banner').classList.add('hidden');
+            renderQuestions();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        document.addEventListener('DOMContentLoaded', renderQuestions);
+    </script>
+</body>
+</html>
