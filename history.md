@@ -134,3 +134,15 @@ Ollama のバージョンアップや長文応答生成時に発生していた�
    - `os.path.basename` を用いて、CLI引数のファイルパスからパスを除外した純粋なファイル名を抽出。
 2. **Ollamaプロンプト・生成テンプレートの変更 (`pcap2quiz.py`)**
    - `generate_quiz_with_ollama` に `pcap_filename` 引数を追加し、プロンプト内の出力仕様にファイル名指定を追加。`description` フィールドへ「`<ファイル名>` の解析サマリに含まれる事実のみに基づき...」と出力されるよう制御。
+
+## [2026-09-14] - v1.5.0
+### 変更・改善概要
+オフライン（インターネット接続不可）環境でのHTML表示崩れを防止するため、Tailwind CSS JSファイルをプロジェクト内に同梱し、HTML生成時に出力先ディレクトリの `assets/` フォルダへ自動コピーする仕組みを導入。
+
+### 追加・変更点
+1. **アセットファイルの同梱 (`assets/tailwindcss.js`)**
+   - オフライン動作に必要な Tailwind CSS standalone スクリプトを `assets/` ディレクトリ内に配置。
+2. **HTML テンプレートのローカル参照化 (`pcap2quiz.py`)**
+   - `<script src="https://cdn.tailwindcss.com"></script>` から相対パス `<script src="assets/tailwindcss.js"></script>` へ変更。
+3. **アセット自動コピー処理の追加 (`pcap2quiz.py`)**
+   - HTML形式での生成時、`pcap2quiz.py` が配置されている `assets/` 内のファイルを、出力指定されたHTMLファイルと同一ディレクトリの `assets/` へ自動的にコピーする処理を追加。

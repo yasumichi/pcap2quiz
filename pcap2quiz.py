@@ -2,6 +2,7 @@ import argparse
 import asyncio
 import json
 import os
+import shutil
 import sys
 from collections import Counter
 import pyshark
@@ -162,7 +163,7 @@ def render_html(quiz_data):
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{title}</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="assets/tailwindcss.js"></script>
     <script>
         tailwind.config = {{
             darkMode: 'class',
@@ -368,6 +369,19 @@ def main():
 
     with open(output_filename, "w", encoding="utf-8") as f:
         f.write(output_content)
+
+    if args.format == "html":
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        src_assets = os.path.join(script_dir, "assets")
+        output_dir = os.path.dirname(os.path.abspath(output_filename))
+        dest_assets = os.path.join(output_dir, "assets")
+        if os.path.exists(src_assets):
+            os.makedirs(dest_assets, exist_ok=True)
+            for item in os.listdir(src_assets):
+                s = os.path.join(src_assets, item)
+                d = os.path.join(dest_assets, item)
+                if os.path.isfile(s):
+                    shutil.copy2(s, d)
 
     print(f"[+] クイズファイルを正常に生成しました: {output_filename}")
 
