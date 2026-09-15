@@ -37,12 +37,19 @@
 
 ## インストール
 
+### CLI ツールとしてインストール
+
+本ツールは `pip` を使用して環境に直接インストールし、コマンドラインツール（`pcap2quiz`）として利用できます。
+
 ```bash
-# リポジトリのクローン（またはダウンロード）
+# リポジトリ直下に移動
 cd pcap2quiz
 
-# 依存パッケージのインストール
-pip install pyshark ollama
+# 通常インストール
+pip install .
+
+# 開発向け（編集可能モード: コード変更が即座に反映されます）
+pip install -e .
 ```
 
 > **注意:** PyShark を動作させるために、システムに `tshark` (Wireshark) がインストールされている必要があります。
@@ -53,8 +60,10 @@ pip install pyshark ollama
 
 ### 基本的な実行例
 
+インストール後は、任意の場所から `pcap2quiz` コマンドで実行できます：
+
 ```bash
-python pcap2quiz.py sample.pcap
+pcap2quiz sample.pcap
 ```
 実行すると、デフォルトで `sample/` ディレクトリ（PCAPファイル名から拡張子を除いた名前）が自動作成され、以下のファイルが出力されます：
 
@@ -71,7 +80,7 @@ python pcap2quiz.py sample.pcap
 ### コマンドライン引数 (オプション)
 
 ```bash
-python pcap2quiz.py <pcap_file> [options]
+pcap2quiz <pcap_file> [options]
 ```
 
 | オプション | 短縮 | デフォルト | 説明 |
@@ -90,22 +99,22 @@ python pcap2quiz.py <pcap_file> [options]
 
 #### 1. 使用モデルと問題数、出力ディレクトリを指定して生成
 ```bash
-python pcap2quiz.py capture.pcap -m gemma:4 -n 5 -o my_quiz_dir
+pcap2quiz capture.pcap -m gemma:4 -n 5 -o my_quiz_dir
 ```
 
 #### 2. HTML 形式のみ出力
 ```bash
-python pcap2quiz.py capture.pcap --html-only
+pcap2quiz capture.pcap --html-only
 ```
 
 #### 3. Moodle 用の Aiken 形式テキストのみ出力
 ```bash
-python pcap2quiz.py capture.pcap --aiken-only
+pcap2quiz capture.pcap --aiken-only
 ```
 
 #### 4. 解析パケット上限数を増やして精査
 ```bash
-python pcap2quiz.py capture.pcap --max-packets 1000 -n 15
+pcap2quiz capture.pcap --max-packets 1000 -n 15
 ```
 
 ---
