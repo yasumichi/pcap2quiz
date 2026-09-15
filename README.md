@@ -51,12 +51,20 @@ pip install pyshark ollama
 
 ## 使い方
 
-### 基本的な実行例 (HTML形式で生成)
+### 基本的な実行例
 
 ```bash
 python pcap2quiz.py sample.pcap
 ```
-実行すると、`soc_quiz.html` が生成されます。ブラウザで開くことでインタラクティブなクイズを実行できます。
+実行すると、デフォルトで `sample/` ディレクトリ（PCAPファイル名から拡張子を除いた名前）が自動作成され、以下のファイルが出力されます：
+
+- `sample/sample.html` (インタラクティブHTMLクイズ)
+- `sample/sample_aiken.txt` (Moodle用Aiken形式テキスト)
+- `sample/summary.txt` (パケット解析要約)
+- `sample/prompt.txt` (LLM送信プロンプト)
+- `sample/response.json` (LLM応答の生JSON)
+
+`sample/sample.html` をブラウザで開くことで、即座にクイズを実行できます。
 
 ---
 
@@ -68,27 +76,34 @@ python pcap2quiz.py <pcap_file> [options]
 
 | オプション | 短縮 | デフォルト | 説明 |
 | :--- | :--- | :--- | :--- |
-| `--format` | `-f` | `html` | 出力フォーマット (`html` または `aiken`) |
 | `--model` | `-m` | `gemma:4` | 使用する Ollama モデル名 |
 | `--num-questions` | `-n` | `10` | 生成する問題数 |
-| `--output` | `-o` | 自動指定 | 出力ファイルパス |
+| `--output` | `-o` | PCAPベース名 | 出力ディレクトリパス |
+| `--html-only` | | `False` | HTML形式のクイズのみ出力 |
+| `--aiken-only` | | `False` | Aiken形式のクイズのみ出力 |
 | `--max-packets` | | `500` | 解析する最大パケット数 |
+| `--prompt-template` | | デフォルト参照 | プロンプトテンプレートファイルパス |
 
 ---
 
 ### 使用例
 
-#### 1. 使用モデルと問題数を指定して生成
+#### 1. 使用モデルと問題数、出力ディレクトリを指定して生成
 ```bash
-python pcap2quiz.py capture.pcap -m gemma:4 -n 5 -o my_quiz.html
+python pcap2quiz.py capture.pcap -m gemma:4 -n 5 -o my_quiz_dir
 ```
 
-#### 2. Moodle 用の Aiken 形式テキストを生成
+#### 2. HTML 形式のみ出力
 ```bash
-python pcap2quiz.py capture.pcap -f aiken -o moodle_quiz.txt
+python pcap2quiz.py capture.pcap --html-only
 ```
 
-#### 3. 解析パケット上限数を増やして精査
+#### 3. Moodle 用の Aiken 形式テキストのみ出力
+```bash
+python pcap2quiz.py capture.pcap --aiken-only
+```
+
+#### 4. 解析パケット上限数を増やして精査
 ```bash
 python pcap2quiz.py capture.pcap --max-packets 1000 -n 15
 ```

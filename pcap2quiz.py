@@ -135,7 +135,7 @@ def generate_quiz_with_ollama(summary_text, pcap_filename, num_questions=10, mod
     content = response['message']['content']
     try:
         data = json.loads(content)
-        return data
+        return data, prompt
     except json.JSONDecodeError as e:
         print(f"[!] Ollamaからの応答をJSONとしてパースできませんでした: {e}")
         print("Raw Content:\n", content)
@@ -187,18 +187,30 @@ def render_aiken(quiz_data):
 def main():
     parser = argparse.ArgumentParser(description="PCAP SOCクイズ生成ツール (PyShark + Ollama JSON Output)")
     parser.add_argument("pcap", help="解析対象の PCAP ファイルパス")
-    parser.add_argument("-f", "--format", choices=["html", "aiken"], default="html", help="出力フォーマット (デフォルト: html)")
     parser.add_argument("-m", "--model", default="gemma:4", help="使用するOllamaモデル名 (デフォルト: gemma:4)")
     parser.add_argument("-n", "--num-questions", type=int, default=10, help="生成する問題数 (デフォルト: 10)")
-    parser.add_argument("-o", "--output", help="出力ファイルパス")
+    parser.add_argument("-o", "--output", help="出力ディレクトリパス (デフォルト: PCAPファイル名から拡張子を除いたディレクトリ)")
+    parser.add_argument("--html-only", action="store_true", help="HTML形式のクイズのみ出力")
+    parser.add_argument("--aiken-only", action="store_true", help="Aiken形式のクイズのみ出力")
     parser.add_argument("--max-packets", type=int, default=500, help="解析する最大パケット数 (デフォルト: 500)")
     parser.add_argument("--prompt-template", help="プロンプトテンプレートファイルパス (デフォルト: templates/quiz_prompt.txt)")
 
     args = parser.parse_args()
 
-    pcap_filename = os.path.basename(args.pcap)
+    pcap_path = Path(args.pcap)
+    pcap_filename = pcap_path.name
+    pcap_stem = pcap_path.stem
+
+    # 出力ディレクトリの設定
+    if args.output:
+        output_dir = Path(args.output)
+    else:
+        output_dir = Path(pcap_stem)
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+
     summary = extract_pcap_summary(args.pcap, max_packets=args.max_packets)
-    quiz_data = generate_quiz_with_ollama(
+    quiz_data, prompt_text = generate_quiz_with_ollama(
         summary,
         pcap_filename=pcap_filename,
         num_questions=args.num_questions,
@@ -206,32 +218,56 @@ def main():
         prompt_template_path=args.prompt_template
     )
 
-    if args.format == "html":
-        output_content = render_html(quiz_data)
-        ext = "html"
-    else:
-        output_content = render_aiken(quiz_data)
-        ext = "txt"
+    # 出力制御フラグの設定
+    generate_html = True
+    generate_aiken = True
 
-    output_filename = args.output if args.output else f"soc_quiz.{ext}"
+    if args.html_only and not args.aiken_only:
+        generate_html = True
+        generate_aiken = False
+    elif args.aiken_only and not args.html_only:
+        generate_html = False
+        generate_aiken = True
 
-    with open(output_filename, "w", encoding="utf-8") as f:
-        f.write(output_content)
+    # 1. パケットの summary_text
+    summary_path = output_dir / "summary.txt"
+    with open(summary_path, "w", encoding="utf-8") as f:
+        f.write(summary)
 
-    if args.format == "html":
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-        src_assets = os.path.join(script_dir, "assets")
-        output_dir = os.path.dirname(os.path.abspath(output_filename))
-        dest_assets = os.path.join(output_dir, "assets")
-        if os.path.exists(src_assets):
-            os.makedirs(dest_assets, exist_ok=True)
-            for item in os.listdir(src_assets):
-                s = os.path.join(src_assets, item)
-                d = os.path.join(dest_assets, item)
-                if os.path.isfile(s):
-                    shutil.copy2(s, d)
+    # 2. モデルに与えたプロンプト
+    prompt_path = output_dir / "prompt.txt"
+    with open(prompt_path, "w", encoding="utf-8") as f:
+        f.write(prompt_text)
 
-    print(f"[+] クイズファイルを正常に生成しました: {output_filename}")
+    # 3. モデルが返した JSON データ
+    json_path = output_dir / "response.json"
+    with open(json_path, "w", encoding="utf-8") as f:
+        json.dump(quiz_data, f, ensure_ascii=False, indent=2)
+
+    # 4. HTML 形式のクイズ
+    if generate_html:
+        html_content = render_html(quiz_data)
+        html_path = output_dir / f"{pcap_stem}.html"
+        with open(html_path, "w", encoding="utf-8") as f:
+            f.write(html_content)
+
+        script_dir = Path(__file__).parent.resolve()
+        src_assets = script_dir / "assets"
+        dest_assets = output_dir / "assets"
+        if src_assets.exists():
+            dest_assets.mkdir(exist_ok=True)
+            for item in src_assets.iterdir():
+                if item.is_file():
+                    shutil.copy2(item, dest_assets / item.name)
+
+    # 5. Aiken 形式のクイズ
+    if generate_aiken:
+        aiken_content = render_aiken(quiz_data)
+        aiken_path = output_dir / f"{pcap_stem}_aiken.txt"
+        with open(aiken_path, "w", encoding="utf-8") as f:
+            f.write(aiken_content)
+
+    print(f"[+] クイズファイル群を正常に出力しました: {output_dir.resolve()}")
 
 
 if __name__ == "__main__":

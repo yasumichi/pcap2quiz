@@ -82,10 +82,17 @@ LLMへ要求する出力データフォーマットは以下の構造としま�
 - `format="json"` を指定し、パースエラーの防止と構造化出力を担保
 
 ### 5.3. Exporter (`render_html`, `render_aiken`)
+- **出力構造:**
+  - デフォルトではPCAPファイル名から拡張子を除いた名前のディレクトリ（`-o` で変更可）を作成し、以下のファイルを出力。
+    - `<PCAPベース名>.html`: HTML形式のクイズ (オプション `--html-only` / `--aiken-only` で制御)
+    - `<PCAPベース名>_aiken.txt`: Aiken形式のクイズ
+    - `summary.txt`: パケットの要約テキスト
+    - `prompt.txt`: モデルに与えたプロンプト
+    - `response.json`: モデルが返した生のJSONデータ
 - **HTML Render:** 
   - 外部テンプレートファイル (`templates/quiz_template.html`) を読み込み、クイズデータを埋め込んで出力。
   - インタラクティブ機能（選択肢のクリック判定、スコア集計、解説アコーディオン表示、再挑戦ボタン）。
-  - シングルファイル（HTML内にCSS/JSを含む）で動作。
+  - シングルファイル（HTML内にCSS/JSを含む）および `assets/` 内のリソースを保持して動作。
 - **Aiken Render:**
   - Aiken標準形式（問題文 -> A)〜D) -> ANSWER: X -> 空行）に準拠。
 
@@ -95,10 +102,11 @@ LLMへ要求する出力データフォーマットは以下の構造としま�
 python pcap2quiz.py <pcap_file> [options]
 
 Options:
-  -f, --format {html,aiken}   出力形式 (デフォルト: html)
   -m, --model MODEL           使用するOllamaモデル名 (デフォルト: gemma:4)
   -n, --num-questions INT     生成する問題数 (デフォルト: 10)
-  -o, --output PATH           出力ファイルパス
+  -o, --output PATH           出力ディレクトリパス (デフォルト: PCAPベース名)
+  --html-only                 HTML形式のクイズのみ出力
+  --aiken-only                Aiken形式のクイズのみ出力
   --max-packets INT           解析する最大パケット数 (デフォルト: 500)
   --prompt-template PATH     使用するプロンプトテンプレートファイルパス (デフォルト: templates/quiz_prompt.txt)
 ```
