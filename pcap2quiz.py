@@ -95,39 +95,31 @@ def extract_pcap_summary(pcap_path, max_packets=500):
     return summary_text
 
 
-def generate_quiz_with_ollama(summary_text, pcap_filename, num_questions=10, model_name="gemma:4"):
+def generate_quiz_with_ollama(summary_text, pcap_filename, num_questions=10, model_name="gemma:4", prompt_template_path=None):
     """
     Ollama経由でJSON Schemaに従ってクイズデータを構造化出力として取得
     """
     print(f"[*] Ollama ({model_name}) にてクイズデータ (JSON) を生成中...")
 
-    prompt = f"""
-あなたはSOC（Security Operations Center）のアナリストです。
-解析対象のPCAPファイル名: {pcap_filename}
-提示された解析サマリを客観的に評価し、Tier 1 / Tier 2 アナリスト向けの実践的な選択式クイズを {num_questions} 問作成してください。
+    if prompt_template_path is None:
+        prompt_template_path = Path(__file__).parent / "templates" / "quiz_prompt.txt"
 
-【出力仕様】
-- description フィールドには、以下のフォーマットで説明を記述してください:
-  "{pcap_filename} の解析サマリに含まれる事実のみに基づき、パケット解析能力とプロトコル理解を評価するための選択式クイズです。"
+    if not Path(prompt_template_path).exists():
+        print(f"[!] プロンプトテンプレートファイルが見つかりません: {prompt_template_path}")
+        sys.exit(1)
 
-【重要：客観的解析とハルシネーション防止の絶対遵守事項】
-1. **パケット内容から直接確認できる事実のみに基づく問題設定 (最重要):**
-   - パケットキャプチャ（PCAPサマリ）に実際に含まれている事実（送信元/送信先IP、ポート番号、通信回数、DNSクエリ名、HTTPリクエストURI/User-Agent、TLS SNI、プロトコル種別等）を直接問う問題、またはそれら事実から論理的に特定できる内容に関する問題のみを作成してください。
-   - **「SOCアナリストとして次に取るべき行動」「エスカレーション手順」「端末隔離の要否」など、SOC要員としての一般的行動・運用対応を問う問題は一切含めないでください。**
-2. **正常トラフィックに対する制限:**
-   - **明確な攻撃や異常（不正ドメイン、既知の攻撃シグネチャ等）が確認できない通信を「攻撃」「攻撃の準備」「偵察」「攻撃の前兆」「不審な通信」と決めつけることを厳密に禁止します。**
-   - 正常なWeb閲覧、DNS問い合わせ、標準的なTLS通信などについては、通信されているIPアドレス、ドメイン名、リクエスト内容、標準的なプロトコル挙動などの事実確認・プロトコル理解を問う問題を作成してください。
-3. **誤検知（False Positive）防止の視点:**
-   - 単なる日常通信や正常なサービス通信であることをパケット情報（ドメインやURI、User-Agent等）からどう判断できるかという、パケット解析・事実確認に基づいた視点の選択肢と解説を用意してください。
+    with open(prompt_template_path, "r", encoding="utf-8") as f:
+        template_text = f.read()
 
-【作成要件】
-- 問題文、選択肢、および解説はすべて「日本語」で記述してください。
-- 4つの選択肢 (A, B, C, D) のうち、正解 (answer) は 'A', 'B', 'C', 'D' のいずれか1つの文字のみを指定してください。
-- 解説 (explanation) は根拠を添えて簡潔（2〜3文程度）に記載してください。
-
-【PCAP解析サマリ】
-{summary_text}
-"""
+    try:
+        prompt = template_text.format(
+            pcap_filename=pcap_filename,
+            num_questions=num_questions,
+            summary_text=summary_text
+        )
+    except KeyError as e:
+        print(f"[!] プロンプトテンプレートのフォーマットエラー (未知の変数キー {e}): {prompt_template_path}")
+        sys.exit(1)
 
     response = ollama.chat(
         model=model_name,
@@ -200,12 +192,19 @@ def main():
     parser.add_argument("-n", "--num-questions", type=int, default=10, help="生成する問題数 (デフォルト: 10)")
     parser.add_argument("-o", "--output", help="出力ファイルパス")
     parser.add_argument("--max-packets", type=int, default=500, help="解析する最大パケット数 (デフォルト: 500)")
+    parser.add_argument("--prompt-template", help="プロンプトテンプレートファイルパス (デフォルト: templates/quiz_prompt.txt)")
 
     args = parser.parse_args()
 
     pcap_filename = os.path.basename(args.pcap)
     summary = extract_pcap_summary(args.pcap, max_packets=args.max_packets)
-    quiz_data = generate_quiz_with_ollama(summary, pcap_filename=pcap_filename, num_questions=args.num_questions, model_name=args.model)
+    quiz_data = generate_quiz_with_ollama(
+        summary,
+        pcap_filename=pcap_filename,
+        num_questions=args.num_questions,
+        model_name=args.model,
+        prompt_template_path=args.prompt_template
+    )
 
     if args.format == "html":
         output_content = render_html(quiz_data)

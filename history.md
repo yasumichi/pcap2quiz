@@ -159,3 +159,17 @@ Ollama のバージョンアップや長文応答生成時に発生していた�
    - `render_html` 関数を改修し、`templates/quiz_template.html` をオープンして `{title}`, `{description}`, `{questions_json}` を動的に置換・埋め込んで完全な HTML を生成するよう変更。
 3. **仕様書・ドキュメントの同期更新 (`AGENTS.md`, `history.md`)**
    - `AGENTS.md` の HTML Render 仕様に外部テンプレートファイルの参照に関する記述を追加し、`history.md` に本変更履歴を追記。
+
+## [2026-09-15] - v1.7.0
+### 変更・改善概要
+Ollama問い合わせ用プロンプトテキストを外部テンプレートファイル (`templates/quiz_prompt.txt`) へ切り出し、プロンプトの調整や変更をコード修正なしで行えるようリファクタリング。合わせてCLI引数に `--prompt-template` オプションを追加。
+
+### 追加・変更点
+1. **プロンプトテンプレートファイルの作成 (`templates/quiz_prompt.txt`)**
+   - Pythonコード内にハードコードされていたプロンプト文字列・客観的事実限定ルール等を分離し、`templates/quiz_prompt.txt` として独立化。
+2. **プロンプト読み込み・挿入処理の改修 (`pcap2quiz.py`)**
+   - `generate_quiz_with_ollama` 関数にて外部テンプレートファイルを読み込み、`str.format` でパラメータ（`pcap_filename`, `num_questions`, `summary_text`）を挿入する処理へ変更。
+3. **CLI引数へのプロンプトテンプレート指定オプション追加 (`pcap2quiz.py`)**
+   - `--prompt-template` 引数を追加し、任意のカスタムプロンプトテンプレートファイルを外部から指定可能に設定。
+4. **仕様書の同期更新 (`AGENTS.md`)**
+   - `AGENTS.md` の Quiz Engine 仕様および CLI オプション説明にプロンプトテンプレートに関する記述を追加。
