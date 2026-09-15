@@ -1,13 +1,13 @@
-from parsers.base import BaseExtractor, ProtocolManager
-from parsers.flow import FlowExtractor
-from parsers.dns import DNSExtractor
-from parsers.http import HTTPExtractor
-from parsers.tls import TLSExtractor
-from parsers.smb import SMBExtractor
-from parsers.ftp import FTPExtractor
-from parsers.smtp import SMTPExtractor
-from parsers.pop3 import POP3Extractor
-from parsers.imap import IMAPExtractor
+from pcap2quiz.parsers.base import BaseExtractor, ProtocolManager
+from pcap2quiz.parsers.flow import FlowExtractor
+from pcap2quiz.parsers.dns import DNSExtractor
+from pcap2quiz.parsers.http import HTTPExtractor
+from pcap2quiz.parsers.tls import TLSExtractor
+from pcap2quiz.parsers.smb import SMBExtractor
+from pcap2quiz.parsers.ftp import FTPExtractor
+from pcap2quiz.parsers.smtp import SMTPExtractor
+from pcap2quiz.parsers.pop3 import POP3Extractor
+from pcap2quiz.parsers.imap import IMAPExtractor
 
 
 def get_default_manager() -> ProtocolManager:

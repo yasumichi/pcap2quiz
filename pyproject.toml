@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pcap2quiz"
+version = "1.9.0"
+description = "A tool to analyze and summarize PCAP files and generate multiple-choice quizzes for SOC analysts using LLMs."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "pyshark",
+    "ollama"
+]
+
+[project.scripts]
+pcap2quiz = "pcap2quiz.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+
+[tool.setuptools.package-data]
+pcap2quiz = ["templates/*", "assets/*"]

@@ -1,5 +1,5 @@
 from collections import Counter
-from parsers.base import BaseExtractor
+from pcap2quiz.parsers.base import BaseExtractor
 
 
 class DNSExtractor(BaseExtractor):

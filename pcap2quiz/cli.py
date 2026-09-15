@@ -9,7 +9,7 @@ from collections import Counter
 import pyshark
 import ollama
 
-from parsers import get_default_manager
+from pcap2quiz.parsers import get_default_manager
 
 
 # --- Python 3.12+ / 3.14 互換性問題への修正パッチ ---

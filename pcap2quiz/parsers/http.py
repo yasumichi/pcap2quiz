@@ -1,4 +1,4 @@
-from parsers.base import BaseExtractor
+from pcap2quiz.parsers.base import BaseExtractor
 
 
 class HTTPExtractor(BaseExtractor):
